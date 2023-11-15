@@ -130,7 +130,7 @@ function init() {
       loader.loadAsync('train.glb'),
       loader.loadAsync('collision.glb'),
       loader.loadAsync('background.glb'),
-      loader.loadAsync('background-animated.glb'),
+      loader.loadAsync('background-animated-1.01.glb'),
     ])
 
     // Train
@@ -142,7 +142,7 @@ function init() {
     collision.scene.children.forEach(function (node) {
       if (node.isMesh) {
         // Converts mesh to cannonjs
-        // The collision mesh needs to be made moslty of boxes
+        // The collision mesh needs to be made mostly of boxes
         const { shape, offset, quaternion } = threeToCannon(node)
         // Add the shape to a CANNON.Body.
         let body = new CANNON.Body({ mass: 0, material: physicsMaterial })
@@ -154,7 +154,7 @@ function init() {
     })
 
 
-    // Background
+    // Ocean and ground
     scene.add(model[2].scene)
 
     // Animated bits
@@ -162,16 +162,32 @@ function init() {
     const animatedElements = model[3]
     scene.add(animatedElements.scene)
 
-    // Selects animation clip
-    let mixer = new THREE.AnimationMixer(animatedElements.scene);
-    let animation = animatedElements.animations[0];
-    mixer.clipAction(animation).play();
-    animationMixers.push(mixer);
+    // Rails and road stripes
+    const rails = scene.getObjectByName( "Background" )
+    let railsMixer = new THREE.AnimationMixer(rails);
+    let railsAnimation = animatedElements.animations[0];
+    railsMixer.clipAction(railsAnimation).play();
+    animationMixers.push(railsMixer);
+
+    // Houses
+
+    // Movement
+    const houses = scene.getObjectByName( "Houses" )
+    let housesMixer = new THREE.AnimationMixer(houses);
+    let housesAnimation = animatedElements.animations[1];
+    housesMixer.clipAction(housesAnimation).play();
+    animationMixers.push(housesMixer);
+
+    // Blink
+    const housesBlink = scene.getObjectByName( "Houses001" )
+    let housesBlinkMixer = new THREE.AnimationMixer(housesBlink);
+    let housesBlinkAnimation = animatedElements.animations[2];
+    housesBlinkMixer.clipAction(housesBlinkAnimation).play();
+    animationMixers.push(housesBlinkMixer);
 
 
     // Shows UI
     instructions.classList.add("in")
-    container.classList.add('in')
     loading.classList.remove('in')
 
   }
@@ -265,12 +281,14 @@ function initPointerLock() {
 
   controls.addEventListener('lock', () => {
     controls.enabled = true
+    container.classList.add('in')
     instructions.classList.remove("in")
     ambientAudio.play()
   })
 
   controls.addEventListener('unlock', () => {
     controls.enabled = false
+    container.classList.remove('in')
     instructions.classList.add("in")
     ambientAudio.pause()
   })
@@ -305,7 +323,14 @@ function onWindowResize() {
 // ANIMATE
 //
 
+var frameCounter = 0
+
 function animate() {
+
+  // if(controls.enabled){
+  //   console.log(frameCounter)
+  //   frameCounter++;
+  // }
 
   requestAnimationFrame(animate)
 

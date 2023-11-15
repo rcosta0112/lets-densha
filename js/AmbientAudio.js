@@ -7,6 +7,8 @@ import * as THREE from 'three'
 class AmbientAudio {
     constructor(camera) {
 
+        this.announcementPlayed = false
+
         // create an AudioListener and add it to the camera
         const listener = new THREE.AudioListener()
         camera.add(listener)
@@ -22,14 +24,35 @@ class AmbientAudio {
             this.ambientAudio.setVolume(10)
         })
 
+
+        // Anouncement
+        this.anouncementAudio = new THREE.Audio(listener)
+
+        const audioLoader2 = new THREE.AudioLoader()
+        audioLoader2.load('sounds/B11_5N.mp3', (buffer) => {
+            this.anouncementAudio.setBuffer(buffer)
+            this.anouncementAudio.setLoop(false)
+            this.anouncementAudio.setVolume(0.3)
+        })
+
+
+
     }
 
-    play(){
+    play() {
+
         this.ambientAudio.play()
+
+        // Announcement only plays once
+        if (!this.announcementPlayed) {
+            setTimeout(() => { this.anouncementAudio.play() }, 1000)
+            this.announcementPlayed = true
+        }
     }
 
-    pause(){
+    pause() {
         this.ambientAudio.pause()
+        this.anouncementAudio.pause()
     }
 
 }
