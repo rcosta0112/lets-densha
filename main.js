@@ -28,6 +28,7 @@ const container = document.getElementById('container')
 const loading = document.querySelector('.loading')
 
 let camera, scene, composer, renderer, stats, ambientAudio
+// let characters = new Array
 let animationMixers = new Array()
 
 // Pointer Lock Controls
@@ -98,7 +99,7 @@ function init() {
 
   // Ocean Plane
   const ocean = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000),
-                               new THREE.MeshBasicMaterial({ color: 0x4dadcb, depthWrite: false }))
+    new THREE.MeshBasicMaterial({ color: 0x4dadcb, depthWrite: false }))
   ocean.rotation.x = - Math.PI / 2
   scene.add(ocean)
 
@@ -131,6 +132,8 @@ function init() {
       loader.loadAsync('collision.glb'),
       loader.loadAsync('background.glb'),
       loader.loadAsync('background-animated-1.01.glb'),
+      loader.loadAsync('penguin-scarf.glb'),
+      loader.loadAsync('characters-2.glb'),
     ])
 
     // Train
@@ -163,32 +166,78 @@ function init() {
     scene.add(animatedElements.scene)
 
     // Rails and road stripes
-    const rails = scene.getObjectByName( "Background" )
-    let railsMixer = new THREE.AnimationMixer(rails);
-    let railsAnimation = animatedElements.animations[0];
-    railsMixer.clipAction(railsAnimation).play();
-    animationMixers.push(railsMixer);
+    const rails = scene.getObjectByName("Background")
+    let railsMixer = new THREE.AnimationMixer(rails)
+    let railsAnimation = animatedElements.animations[0]
+    railsMixer.clipAction(railsAnimation).play()
+    animationMixers.push(railsMixer)
 
     // Houses
 
     // Movement
-    const houses = scene.getObjectByName( "Houses" )
-    let housesMixer = new THREE.AnimationMixer(houses);
-    let housesAnimation = animatedElements.animations[1];
-    housesMixer.clipAction(housesAnimation).play();
-    animationMixers.push(housesMixer);
+    const houses = scene.getObjectByName("Houses")
+    let housesMixer = new THREE.AnimationMixer(houses)
+    let housesAnimation = animatedElements.animations[1]
+    housesMixer.clipAction(housesAnimation).play()
+    animationMixers.push(housesMixer)
 
     // Blink
-    const housesBlink = scene.getObjectByName( "Houses001" )
-    let housesBlinkMixer = new THREE.AnimationMixer(housesBlink);
-    let housesBlinkAnimation = animatedElements.animations[2];
-    housesBlinkMixer.clipAction(housesBlinkAnimation).play();
-    animationMixers.push(housesBlinkMixer);
+    const housesBlink = scene.getObjectByName("Houses001")
+    let housesBlinkMixer = new THREE.AnimationMixer(housesBlink)
+    let housesBlinkAnimation = animatedElements.animations[2]
+    housesBlinkMixer.clipAction(housesBlinkAnimation).play()
+    animationMixers.push(housesBlinkMixer)
 
 
     // Shows UI
     instructions.classList.add("in")
     loading.classList.remove('in')
+
+
+    //
+    // Characters
+    //
+
+    // In Blender
+    // This is one unique action per unique characters, so I'm seleting them in the actions editor
+    // No need for NLA strips
+    // Bake any noise modifiers (on the 3D viewport: F3 then Bake Action)
+    // 
+    // Export as gltf 
+    // Animation mode: actions
+    // 
+
+    // Penguin Scarf
+    // const penguinScarf = model[4]
+    // scene.add(penguinScarf.scene)
+    // let penguinScarfMixer = new THREE.AnimationMixer(penguinScarf.scene)
+    // penguinScarfMixer.clipAction(penguinScarf.animations[0]).play()
+    // animationMixers.push(penguinScarfMixer)
+
+    // Threejs
+    //
+    // Animations go in the root gltf object. Not inside each child
+    // Check the animations array to figure out the order for the characters array bellow
+    // 
+
+
+    // Other Characters
+    
+    const characters = model[5]
+    scene.add(characters.scene)
+
+    
+    // Animations go in the root gltf object. Not inside each child
+    // Not sure what happens if a child object doesn't have an animation.
+    // It will probably break
+
+    // console.log(characters.scene.children)
+
+    characters.scene.children.forEach((character, index) => {
+      let mixer = new THREE.AnimationMixer(character)
+      mixer.clipAction(characters.animations[index]).play()
+      animationMixers.push(mixer)
+    })
 
   }
 
@@ -329,7 +378,7 @@ function animate() {
 
   // if(controls.enabled){
   //   console.log(frameCounter)
-  //   frameCounter++;
+  //   frameCounter++
   // }
 
   requestAnimationFrame(animate)
@@ -339,7 +388,7 @@ function animate() {
   lastCallTime = time
 
   if (controls.enabled) world.step(timeStep, delta)
-  
+
   // Animations
   animationMixers.forEach((mixer) => mixer.update(delta))
 
