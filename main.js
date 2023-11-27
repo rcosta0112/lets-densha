@@ -19,21 +19,16 @@ import { PointerLockControlsCannon } from './js/PointerLockControlsCannon.js'
 import { threeToCannon } from 'three-to-cannon'
 
 import { AmbientAudio } from './js/AmbientAudio.js'
+import { Houses } from './js/Houses.js'
 
 const basePath = import.meta.env.BASE_URL
 
 const container = document.getElementById('container')
 const loading = document.querySelector('.loading')
 
-let camera, scene, composer, renderer, stats, ambientAudio
+let camera, scene, composer, renderer, stats, ambientAudio, houses
 // let characters = new Array
 let animationMixers = new Array()
-
-let housesSource = new Array()
-let housesAnimated = new Array()
-let houseCreateTimer = 0
-const maxHouses = 50
-const houseCreateInterval = 50
 
 // Pointer Lock Controls
 
@@ -165,19 +160,10 @@ function init() {
 
     // Houses
 
-    // Puts all the models from the GLB in the houses array
-    model[4].scene.children.forEach((house) => housesSource.push(house))
-
-    // Prepopulate house array
-    for (let ii = 0; ii <= maxHouses; ii++) {
-      createHouse()
-      housesAnimated.forEach((house) => {
-        house.position.z -= 10
-      })
-    }
+    houses = new Houses(scene, model[4].scene.children)
 
     // Cars
-    scene.add(model[6].scene)
+    // scene.add(model[6].scene)
 
 
     //
@@ -359,7 +345,7 @@ function animate() {
   animationMixers.forEach((mixer) => mixer.update(delta))
 
   // Houses
-  animateHouses()
+  if(houses) houses.animateHouses()
 
   controls.update(delta)
   stats.update()
@@ -368,36 +354,5 @@ function animate() {
 
 }
 
-function animateHouses() {
-
-  houseCreateTimer++
-
-  if (houseCreateTimer > houseCreateInterval) {
-    createHouse()
-    houseCreateTimer = 0
-  }
-
-  housesAnimated.forEach((house) => {
-    house.position.z -= 0.2
-  })
-
-}
-
-function createHouse() {
-
-  // Creates random house
-  const house = housesSource[Math.round(Math.round(Math.random() * (housesSource.length - 1)))].clone()
-  housesAnimated.push(house)
-  house.position.set(-51.6, 0, 200)
-  house.rotation.y = (Math.PI / 2) * Math.round(Math.random() * 4)
-  // const randomScale = Math.random() + 0.9
-  // house.scale.set(randomScale, randomScale, randomScale)
-  scene.add(house)
-
-  // remove excess houses
-  scene.remove(housesAnimated[0])
-  if (housesAnimated.length > maxHouses) housesAnimated.shift()
-
-}
 
 
