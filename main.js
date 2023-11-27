@@ -10,9 +10,7 @@ import Stats from 'three/addons/libs/stats.module.js'
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-// import { HalftonePass } from 'three/addons/postprocessing/HalftonePass.js'
-import { RenderPixelatedPass } from 'three/addons/postprocessing/RenderPixelatedPass.js'
+
 
 // Controls
 
@@ -30,6 +28,12 @@ const loading = document.querySelector('.loading')
 let camera, scene, composer, renderer, stats, ambientAudio
 // let characters = new Array
 let animationMixers = new Array()
+
+let housesSource = new Array()
+let housesAnimated = new Array()
+let houseCreateTimer = 0
+const maxHouses = 50
+const houseCreateInterval = 50
 
 // Pointer Lock Controls
 
@@ -77,23 +81,8 @@ function init() {
 
   const renderScene = new RenderPass(scene, camera)
 
-  // Bloom
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85)
-  bloomPass.threshold = 0
-  bloomPass.strength = 0.2
-  bloomPass.radius = 0
-
-  // Pixelated
-  const renderPixelatedPass = new RenderPixelatedPass(2, scene, camera)
-  renderPixelatedPass.normalEdgeStrength = 0
-
-
   composer = new EffectComposer(renderer)
   composer.addPass(renderScene)
-  // composer.addPass(renderPixelatedPass)
-  // composer.addPass(bloomPass)
-
-
 
   ambientAudio = new AmbientAudio(camera)
 
@@ -131,9 +120,10 @@ function init() {
       loader.loadAsync('train.glb'),
       loader.loadAsync('collision.glb'),
       loader.loadAsync('background.glb'),
-      loader.loadAsync('background-animated-1.01.glb'),
-      loader.loadAsync('penguin-scarf.glb'),
+      loader.loadAsync('rails.glb'),
+      loader.loadAsync('houses.glb'),
       loader.loadAsync('characters-2.glb'),
+      loader.loadAsync('cars.glb'),
     ])
 
     // Train
@@ -152,6 +142,7 @@ function init() {
         body.addShape(shape, offset, quaternion)
         body.position = node.position
         body.type = CANNON.Body.STATIC
+        // Comment this out to disable collision
         world.addBody(body)
       }
     })
@@ -166,7 +157,7 @@ function init() {
     scene.add(animatedElements.scene)
 
     // Rails and road stripes
-    const rails = scene.getObjectByName("Background")
+    const rails = scene.getObjectByName("Rails")
     let railsMixer = new THREE.AnimationMixer(rails)
     let railsAnimation = animatedElements.animations[0]
     railsMixer.clipAction(railsAnimation).play()
@@ -174,70 +165,50 @@ function init() {
 
     // Houses
 
-    // Movement
-    const houses = scene.getObjectByName("Houses")
-    let housesMixer = new THREE.AnimationMixer(houses)
-    let housesAnimation = animatedElements.animations[1]
-    housesMixer.clipAction(housesAnimation).play()
-    animationMixers.push(housesMixer)
+    // Puts all the models from the GLB in the houses array
+    model[4].scene.children.forEach((house) => housesSource.push(house))
 
-    // Blink
-    const housesBlink = scene.getObjectByName("Houses001")
-    let housesBlinkMixer = new THREE.AnimationMixer(housesBlink)
-    let housesBlinkAnimation = animatedElements.animations[2]
-    housesBlinkMixer.clipAction(housesBlinkAnimation).play()
-    animationMixers.push(housesBlinkMixer)
+    // Prepopulate house array
+    for (let ii = 0; ii <= maxHouses; ii++) {
+      createHouse()
+      housesAnimated.forEach((house) => {
+        house.position.z -= 10
+      })
+    }
 
-
-    // Shows UI
-    instructions.classList.add("in")
-    loading.classList.remove('in')
+    // Cars
+    scene.add(model[6].scene)
 
 
     //
     // Characters
     //
 
+    //
     // In Blender
-    // This is one unique action per unique characters, so I'm seleting them in the actions editor
+    // This is one unique action per unique character, so I'm selecting them in the actions editor
     // No need for NLA strips
     // Bake any noise modifiers (on the 3D viewport: F3 then Bake Action)
-    // 
     // Export as gltf 
     // Animation mode: actions
     // 
 
-    // Penguin Scarf
-    // const penguinScarf = model[4]
-    // scene.add(penguinScarf.scene)
-    // let penguinScarfMixer = new THREE.AnimationMixer(penguinScarf.scene)
-    // penguinScarfMixer.clipAction(penguinScarf.animations[0]).play()
-    // animationMixers.push(penguinScarfMixer)
-
-    // Threejs
-    //
-    // Animations go in the root gltf object. Not inside each child
-    // Check the animations array to figure out the order for the characters array bellow
-    // 
-
-
-    // Other Characters
-    
     const characters = model[5]
     scene.add(characters.scene)
 
-    
-    // Animations go in the root gltf object. Not inside each child
+    // Animations go in the root glb object. Not inside each child
     // Not sure what happens if a child object doesn't have an animation.
     // It will probably break
-
-    // console.log(characters.scene.children)
 
     characters.scene.children.forEach((character, index) => {
       let mixer = new THREE.AnimationMixer(character)
       mixer.clipAction(characters.animations[index]).play()
       animationMixers.push(mixer)
     })
+
+    // Shows UI
+    instructions.classList.add("in")
+    loading.classList.remove('in')
 
   }
 
@@ -376,11 +347,6 @@ var frameCounter = 0
 
 function animate() {
 
-  // if(controls.enabled){
-  //   console.log(frameCounter)
-  //   frameCounter++
-  // }
-
   requestAnimationFrame(animate)
 
   const time = performance.now() / 1000
@@ -392,9 +358,46 @@ function animate() {
   // Animations
   animationMixers.forEach((mixer) => mixer.update(delta))
 
+  // Houses
+  animateHouses()
+
   controls.update(delta)
   stats.update()
 
   composer.render()
 
 }
+
+function animateHouses() {
+
+  houseCreateTimer++
+
+  if (houseCreateTimer > houseCreateInterval) {
+    createHouse()
+    houseCreateTimer = 0
+  }
+
+  housesAnimated.forEach((house) => {
+    house.position.z -= 0.2
+  })
+
+}
+
+function createHouse() {
+
+  // Creates random house
+  const house = housesSource[Math.round(Math.round(Math.random() * (housesSource.length - 1)))].clone()
+  housesAnimated.push(house)
+  house.position.set(-51.6, 0, 200)
+  house.rotation.y = (Math.PI / 2) * Math.round(Math.random() * 4)
+  // const randomScale = Math.random() + 0.9
+  // house.scale.set(randomScale, randomScale, randomScale)
+  scene.add(house)
+
+  // remove excess houses
+  scene.remove(housesAnimated[0])
+  if (housesAnimated.length > maxHouses) housesAnimated.shift()
+
+}
+
+

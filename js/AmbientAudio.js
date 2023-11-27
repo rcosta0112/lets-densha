@@ -18,12 +18,22 @@ class AmbientAudio {
 
         // load a sound and set it as the Audio object's buffer
         const audioLoader = new THREE.AudioLoader()
-        audioLoader.load('sounds/ambient_compressed.mp3', (buffer) => {
+        audioLoader.load('sounds/ambient_compressed_2.mp3', (buffer) => {
             this.ambientAudio.setBuffer(buffer)
             this.ambientAudio.setLoop(true)
-            this.ambientAudio.setVolume(10)
+            this.ambientAudio.setVolume(1)
         })
 
+        // Music
+        this.music = new THREE.Audio(listener)
+
+        // load a sound and set it as the Audio object's buffer
+        const audioLoaderMusic = new THREE.AudioLoader()
+        audioLoaderMusic.load('sounds/sinnesloschen-beam-117362.mp3', (buffer) => {
+            this.music.setBuffer(buffer)
+            this.music.setLoop(true)
+            this.music.setVolume(1)
+        })
 
         // Anouncement
         this.anouncementAudio = new THREE.Audio(listener)
@@ -35,13 +45,12 @@ class AmbientAudio {
             this.anouncementAudio.setVolume(0.3)
         })
 
-
-
     }
 
     play() {
 
         this.ambientAudio.play()
+        this.music.play()
 
         // Announcement only plays once
         if (!this.announcementPlayed) {
@@ -52,6 +61,7 @@ class AmbientAudio {
 
     pause() {
         this.ambientAudio.pause()
+        this.music.pause()
         this.anouncementAudio.pause()
     }
 
