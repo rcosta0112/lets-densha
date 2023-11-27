@@ -20,13 +20,14 @@ import { threeToCannon } from 'three-to-cannon'
 
 import { AmbientAudio } from './js/AmbientAudio.js'
 import { Houses } from './js/Houses.js'
+import { Cars } from './js/Cars.js'
 
 const basePath = import.meta.env.BASE_URL
 
 const container = document.getElementById('container')
 const loading = document.querySelector('.loading')
 
-let camera, scene, composer, renderer, stats, ambientAudio, houses
+let camera, scene, composer, renderer, stats, ambientAudio, houses, cars
 // let characters = new Array
 let animationMixers = new Array()
 
@@ -119,6 +120,7 @@ function init() {
       loader.loadAsync('houses.glb'),
       loader.loadAsync('characters-2.glb'),
       loader.loadAsync('cars.glb'),
+      loader.loadAsync('cars-static.glb'),
     ])
 
     // Train
@@ -163,8 +165,8 @@ function init() {
     houses = new Houses(scene, model[4].scene.children)
 
     // Cars
-    // scene.add(model[6].scene)
-
+    cars = new Cars(scene, model[6].scene.children)
+    scene.add(model[7].scene) // static cars
 
     //
     // Characters
@@ -329,7 +331,6 @@ function onWindowResize() {
 // ANIMATE
 //
 
-var frameCounter = 0
 
 function animate() {
 
@@ -346,6 +347,9 @@ function animate() {
 
   // Houses
   if(houses) houses.animateHouses()
+
+  // Cars
+  if(cars) cars.animateCars()
 
   controls.update(delta)
   stats.update()

@@ -1,10 +1,10 @@
 //
-// Ambient Audio
+// Houses and Trees
 //
 
-import * as THREE from 'three'
 
 class Houses {
+    
     constructor(scene, housesSource) {
 
         this.scene = scene
@@ -42,10 +42,10 @@ class Houses {
 
     }
 
-    createHouse () {
+    createHouse() {
 
         // Creates random house
-        const house = this.housesSource[Math.round(Math.round(Math.random() * (this.housesSource.length - 1)))].clone()
+        const house = this.housesSource[Math.round(Math.random() * (this.housesSource.length - 1))].clone()
         this.housesAnimated.push(house)
         house.position.set(-51.6, 0, 200)
         house.rotation.y = (Math.PI / 2) * Math.round(Math.random() * 4)
