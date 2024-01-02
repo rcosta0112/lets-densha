@@ -11,7 +11,7 @@ class Houses {
         this.housesSource = housesSource
         this.housesAnimated = new Array()
         this.houseCreateTimer = 0
-        this.maxHouses = 50
+        this.maxHouses = 55
         this.houseCreateInterval = 50
 
         // // Puts all the models from the GLB in the houses array
@@ -47,7 +47,7 @@ class Houses {
         // Creates random house
         const house = this.housesSource[Math.round(Math.random() * (this.housesSource.length - 1))].clone()
         this.housesAnimated.push(house)
-        house.position.set(-51.6, 0, 200)
+        house.position.set(-51.6, -0.661, 200)
         house.rotation.y = (Math.PI / 2) * Math.round(Math.random() * 4)
         // const randomScale = Math.random() + 0.9
         // house.scale.set(randomScale, randomScale, randomScale)

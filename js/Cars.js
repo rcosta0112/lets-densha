@@ -11,7 +11,7 @@ class Cars {
         this.carsSource = source
         this.carsAnimated = new Array()
         this.carCreateTimer = 0
-        this.maxCars = 50
+        this.maxCars = 15
         this.carCreateInterval = 100
 
         // Prepopulate car array
