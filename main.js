@@ -7,33 +7,32 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js'
 
 import Stats from 'three/addons/libs/stats.module.js'
+import { GUI } from 'dat.gui';
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 
-
 // Controls
-
 import * as CANNON from 'cannon-es'
 import { PointerLockControlsCannon } from './js/PointerLockControlsCannon.js'
 import { threeToCannon } from 'three-to-cannon'
 
+// Custom
 import { AmbientAudio } from './js/AmbientAudio.js'
 import { Houses } from './js/Houses.js'
+import { Clouds } from './js/Clouds.js'
 import { Cars } from './js/Cars.js'
+import { CarsStatic } from './js/Cars-static.js'
 
 const basePath = import.meta.env.BASE_URL
 
 const container = document.getElementById('container')
 const loading = document.querySelector('.loading')
 
-let camera, scene, composer, renderer, stats, ambientAudio, houses, cars
-// let characters = new Array
+let camera, scene, composer, renderer, stats, ambientAudio, houses, cars, carsStatic, clouds
 let animationMixers = new Array()
 
-// Pointer Lock Controls
-
-// cannon.js variables
+// cannon.js
 let world
 let controls
 const timeStep = 1 / 60
@@ -50,14 +49,13 @@ initPointerLock()
 
 animate()
 
-
 function init() {
 
   scene = new THREE.Scene()
-  scene.fog = new THREE.Fog(0x87ced5, 50, 300)
+  scene.fog = new THREE.Fog(0x9ec6cb, 60000, 236272)
 
   renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setPixelRatio(1) // USE THIS FOR QUALITY SELECTOR
+  renderer.setPixelRatio(1) // USE THIS FOR QUALITY SELECTOR?
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.gammaFactor = 1
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -66,25 +64,29 @@ function init() {
 
   container.appendChild(renderer.domElement)
 
-  // Camera
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-  // Y controls the camera height
-  camera.position.set(0, 1.1, 0)
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200000)
+  camera.position.set(0, 1.1, 0) // Y controls the camera height
+
 
   //
   // Post Processing
   //
 
   const renderScene = new RenderPass(scene, camera)
-
   composer = new EffectComposer(renderer)
   composer.addPass(renderScene)
+
+
+  // Audio
 
   ambientAudio = new AmbientAudio(camera)
 
   // Ocean Plane
-  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000),
-    new THREE.MeshBasicMaterial({ color: 0x4dadcb, depthWrite: false }))
+  const ocean = new THREE.Mesh(
+    new THREE.PlaneGeometry(1000, 1000),
+    new THREE.MeshBasicMaterial({ color: 0x4dadcb, depthWrite: false })
+  )
+
   ocean.rotation.x = - Math.PI / 2
   scene.add(ocean)
 
@@ -94,9 +96,8 @@ function init() {
   //
 
   const loadingManager = new THREE.LoadingManager()
-  loadingManager.onProgress = (item, loaded, total) => {
+  loadingManager.onProgress = (loaded, total) => {
     let progress = Math.round(loaded * 100 / total)
-    // loadingLabel.innerHTML = "Loading " + progress + "%"
     progressBar.style.width = progress + "%"
   }
 
@@ -121,6 +122,7 @@ function init() {
       loader.loadAsync('characters-2.glb'),
       loader.loadAsync('cars.glb'),
       loader.loadAsync('cars-static.glb'),
+      loader.loadAsync('clouds.glb'),
     ])
 
     // Train
@@ -145,28 +147,51 @@ function init() {
     })
 
 
+
+    //
     // Ocean and ground
+    //
+
     scene.add(model[2].scene)
 
-    // Animated bits
+
+
+    //
+    // Rails and road stripes
+    //
+
     /// The animations are stored on the root element of the GLTF file, not in the mesh
     const animatedElements = model[3]
     scene.add(animatedElements.scene)
 
-    // Rails and road stripes
     const rails = scene.getObjectByName("Rails")
     let railsMixer = new THREE.AnimationMixer(rails)
     let railsAnimation = animatedElements.animations[0]
     railsMixer.clipAction(railsAnimation).play()
     animationMixers.push(railsMixer)
 
+
+
+    //
+    // Clouds
+    //
+
+    clouds = new Clouds(scene, model[8].scene.children, camera)
+
+    //
     // Houses
+    //
 
     houses = new Houses(scene, model[4].scene.children)
 
+
+    //
     // Cars
+    //
+
     cars = new Cars(scene, model[6].scene.children)
-    scene.add(model[7].scene) // static cars
+    carsStatic = new CarsStatic(scene, model[7].scene)
+    // scene.add(model[7].scene)
 
     //
     // Characters
@@ -194,9 +219,21 @@ function init() {
       animationMixers.push(mixer)
     })
 
+
+
     // Shows UI
     instructions.classList.add("in")
     loading.classList.remove('in')
+
+    // GUI 
+    // const gui = new GUI()
+    // gui.add(scene.fog, 'near', 0, 1000000)
+    // gui.add(scene.fog, 'far', 0, 1000000)
+    // gui.add(scene.fog.color, 'r', 0, 255, 1)
+    // gui.add(scene.fog.color, 'g', 0, 255, 1)
+    // gui.add(scene.fog.color, 'b', 0, 255, 1)
+    // gui.add(clouds, 'cloudSpeed', 0, 100, 1)
+    // gui.add(clouds, 'maxClouds', 0, 1000)
 
   }
 
@@ -211,8 +248,8 @@ function init() {
 
   // Stats widget
 
-  stats = new Stats()
-  document.body.appendChild(stats.dom)
+  // stats = new Stats()
+  // document.body.appendChild(stats.dom)
 
   window.addEventListener('resize', onWindowResize)
 
@@ -344,15 +381,13 @@ function animate() {
 
   // Animations
   animationMixers.forEach((mixer) => mixer.update(delta))
-
-  // Houses
-  if(houses) houses.animateHouses()
-
-  // Cars
-  if(cars) cars.animateCars()
+  if (houses) houses.animateHouses()
+  if (clouds) clouds.animateClouds()
+  if (cars) cars.animateCars()
+  if (carsStatic) carsStatic.animateCars()
 
   controls.update(delta)
-  stats.update()
+  // stats.update()
 
   composer.render()
 
