@@ -42,8 +42,9 @@ body {
   opacity: 1;
 }
 
-
-
+.eki-chan {
+  height: 30vh;
+}
 
 .loading {
   position: absolute;
@@ -205,6 +206,9 @@ a {
   font-size: 36px;
 }
 
+.spacer {
+  height: 78px;
+}
 .spacer-128 {
   height: 128px;
 }
